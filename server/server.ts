@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-
+const users = new Map();
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -25,6 +25,12 @@ app.get("/", (req: Request, res: Response) => {
 
 io.on("connection", (socket) => {
   console.log("A user connected: ", socket.id);
+
+  socket.on("register", (userId) => {
+    users.set(userId, socket.id);
+
+    io.emit("all-users", Array.from(users.keys()));
+  });
 
   socket.on("message", (data) => {
     console.log("Received message: ", data);
