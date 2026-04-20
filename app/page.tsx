@@ -1,31 +1,31 @@
-"use client";
-import { io } from "socket.io-client";
-import { useEffect, useState } from "react";
-import { AuthButton } from "@/components/auth-button";
-const Page = () => {
-  const [connected, setConnected] = useState(false);
+import { Suspense } from "react";
+import Homepage from "./home-page";
 
-  useEffect(() => {
-    const socket = io("http://localhost:3001");
-
-    socket.on("connect", () => {
-      console.log("Connected:", socket.id);
-      setConnected(true);
-    });
-
-    socket.on("disconnect", () => {
-      setConnected(false);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+export default function Page() {
   return (
-    <div>
-      <div>{connected ? "Connected" : "Disconnected"}</div>
-    </div>
+    <Suspense fallback={<div>Loading users...</div>}>
+      <UsersWrapper />
+    </Suspense>
   );
-};
+}
 
-export default Page;
+async function UsersWrapper() {
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const {
+    data: { user }, 
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return <div>Not logged in</div>;
+  }
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .neq("id", user.id);
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return <Homepage initialUsers={data || []} />;
+}
