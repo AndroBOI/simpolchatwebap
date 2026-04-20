@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import ChatWrapper from "./chat-wrapper";
 import { Suspense } from "react";
 
-const page = ({ params }: { params: Promise<{ id: string }> }) => {
+const page = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <Suspense fallback={<div>Loading chat...</div>}>
       <Wrapper params={params} />
@@ -15,7 +15,7 @@ export default page;
 async function Wrapper({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  console.log("Looking up user with id:", id); 
+  console.log("Looking up user with id:", id);
 
   const supabase = await createClient();
 
@@ -25,8 +25,10 @@ async function Wrapper({ params }: { params: Promise<{ id: string }> }) {
     .eq("id", id)
     .single();
 
-  console.log("user:", user, "error:", error); 
-
+  if (error) {
+    console.error("Error fetching user:", error);
+    return <div>Error fetching user: {error.message}</div>;
+  }
   if (!user) {
     return <div>User not found — id was: {id}</div>;
   }
