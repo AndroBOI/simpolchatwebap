@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { CircleUserRound } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+
 export default async function UsersContent() {
   const supabase = await createClient();
 
@@ -24,11 +26,12 @@ export default async function UsersContent() {
 
       <div className="rounded-xl border border-border bg-card divide-y divide-border">
         {users?.map((user) => (
-          <div
+          <Link
+          href={`/chat/${user.id}`}
             key={user.id}
             className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors cursor-pointer"
           >
-            {/* Avatar */}
+    
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               {user.avatar_url ? (
                 <Image
@@ -51,7 +54,7 @@ export default async function UsersContent() {
                 </p>
               )}
             </div>
-          </div>
+          </Link>
         ))}
 
         {(!users || users.length === 0) && (
