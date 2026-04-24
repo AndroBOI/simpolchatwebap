@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { Send, CircleUserRound } from "lucide-react";
 import { Message, Props } from "@/types";
+import { useRouter } from "next/navigation";
 
 const ChatWindow = ({
   conversationId,
@@ -14,6 +15,10 @@ const ChatWindow = ({
   const [input, setInput] = useState("");
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [conversationId, initialMessages]);
 
   useEffect(() => {
     const socket = io("http://localhost:3001", {
@@ -26,6 +31,8 @@ const ChatWindow = ({
       console.log(`Connected with id ${socket.id}`);
     });
 
+    socket.emit("mark_read", { conversation_id: conversationId });
+
     socket.on("new_message", (message: Message) => {
       setMessages((prev) => [...prev, message]);
     });
@@ -36,6 +43,7 @@ const ChatWindow = ({
 
     return () => {
       socket.disconnect();
+      router.refresh();
     };
   }, [conversationId]);
 
@@ -60,7 +68,6 @@ const ChatWindow = ({
 
   return (
     <>
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
@@ -109,7 +116,6 @@ const ChatWindow = ({
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="shrink-0 px-4 py-3 border-t border-border bg-card">
         <div className="flex items-center gap-2">
           <input
