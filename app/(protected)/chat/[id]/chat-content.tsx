@@ -35,7 +35,7 @@ const ChatContent = async ({ params }: { params: { id: string } }) => {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0">
-        <Link href="/users" className="hover:opacity-70 transition-opacity">
+        <Link href="/chat" className="hover:opacity-70 transition-opacity">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
