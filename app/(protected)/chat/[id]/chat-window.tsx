@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { getSocket, readConversations } from "@/lib/socket";
 import { Send, CircleUserRound } from "lucide-react";
 import { Message, Props } from "@/types";
 
@@ -12,22 +12,27 @@ const ChatWindow = ({
 }: Props) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
-  const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:3001", {
-      auth: { user_id: currentUserId },
-    });
+    const socket = getSocket(currentUserId);
 
-    socketRef.current = socket;
+    // mark as read immediately
+    readConversations.add(conversationId);
+    if (socket.connected) {
+      socket.emit("mark_read", { conversation_id: conversationId });
+    }
 
     socket.on("connect", () => {
-      console.log(`Connected with id ${socket.id}`);
+      socket.emit("mark_read", { conversation_id: conversationId });
     });
 
     socket.on("new_message", (message: Message) => {
       setMessages((prev) => [...prev, message]);
+     
+      if (message.conversation_id === conversationId) {
+        socket.emit("mark_read", { conversation_id: conversationId });
+      }
     });
 
     socket.on("error", (err: { message: string }) => {
@@ -35,22 +40,24 @@ const ChatWindow = ({
     });
 
     return () => {
-      socket.disconnect();
+      socket.off("connect");
+      socket.off("new_message");
+      socket.off("error");
+
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = () => {
-    if (!input.trim() || !socketRef.current) return;
-
-    socketRef.current.emit("send_message", {
+    if (!input.trim()) return;
+    const socket = getSocket(currentUserId);
+    socket.emit("send_message", {
       conversation_id: conversationId,
       content: input.trim(),
     });
-
     setInput("");
   };
 
@@ -60,7 +67,6 @@ const ChatWindow = ({
 
   return (
     <>
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
@@ -109,7 +115,6 @@ const ChatWindow = ({
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="shrink-0 px-4 py-3 border-t border-border bg-card">
         <div className="flex items-center gap-2">
           <input
